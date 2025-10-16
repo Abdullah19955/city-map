@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_d3123ea09609e1987c783e45119fcf9c {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-locatecontrol/0.66.2/L.Control.Locate.min.css"/>
+</head>
+<body>
+    
+    
+<script>
+(function() {
+  function waitForMap(maxMs) {
+    return new Promise(function(resolve, reject) {
+      var start = Date.now();
+      (function tick() {
+        try {
+          if (window.L) {
+            for (var k in window) {
+              try { if (window[k] instanceof L.Map) return resolve(window[k]); } catch(e) {}
+            }
+          }
+        } catch(e) {}
+        if (Date.now() - start > (maxMs || 5000)) return reject(new Error('Leaflet map not found'));
+        setTimeout(tick, 100);
+      })();
+    });
+  }
+
+  // CSV helpers
+  function escCSV(s){ s = (s==null?'':String(s)); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }
+  function rowsToCSV(rows, headers){
+    const head = headers.join(',');
+    const body = rows.map(r => headers.map(h => escCSV(r[h] ?? '')).join(',')).join('\n');
+    return head + '\n' + body;
+  }
+  function download(filename, text){
+    const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }
+
+  // localStorage overrides
+  const STORAGE_KEY = 'city_map_overrides_v3'; // new version includes phone+email
+  function loadOverrides() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(e) { return {}; }
+  }
+  function saveOverrides(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+  function keyFor(reg, city, id){ return reg + '||' + city + '||' + id; }
+
+  waitForMap(8000).then(function(map) {
+    try {
+      const DATA = {"Anhui": [{"city": "Chizhou", "count": 1, "lat": 30.6671088, "lon": 117.4859885, "entries": [{"id": 0, "address": "Chizhou Xin Feiyang Ship Building Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Wuhu", "count": 2, "lat": 31.1800568, "lon": 118.2141777, "entries": [{"id": 0, "address": "Wuhu Shipyard", "contact": "James - Nanjing Office", "mob": "138 5148 5545", "mail": "james_shao@haicheungchina.com"}, {"id": 1, "address": "Wuhu Xinlian Shipbuilding", "contact": "", "mob": "", "mail": ""}]}], "Anqing": [{"city": "Anqing", "count": 1, "lat": 30.5276161, "lon": 117.0515956, "entries": [{"id": 0, "address": "Dongfang Shipbuilding", "contact": "", "mob": "", "mail": ""}]}], "Chongqing": [{"city": "Chongqing", "count": 1, "lat": 30.8101669, "lon": 108.4034084, "entries": [{"id": 0, "address": "Chongqing Chuandong Shipping", "contact": "", "mob": "", "mail": ""}]}], "Fujian": [{"city": "Fujian", "count": 2, "lat": 26.9120598, "lon": 118.981458, "entries": [{"id": 0, "address": "Fujian South East Shipyard", "contact": "Buddy - Guangzhou Office", "mob": "150 8001 5855", "mail": "buddy_zhang@haicheungchina.com"}, {"id": 1, "address": "Fujian Shipbuilding Industry Group Corporation", "contact": "", "mob": "", "mail": ""}]}, {"city": "Mawei", "count": 1, "lat": 26.0913222, "lon": 119.4909947, "entries": [{"id": 0, "address": "Mawei Shipyard Fushun New Village", "contact": "Buddy - Guangzhou Office", "mob": "150 8001 5855", "mail": "buddy_zhang@haicheungchina.com"}]}, {"city": "Xiamen", "count": 3, "lat": 24.5438732, "lon": 118.0768065, "entries": [{"id": 0, "address": "COSCO (Xiamen) Shipyard Co.,Ltd.", "contact": "Buddy - Guangzhou Office", "mob": "150 8001 5855", "mail": "buddy_zhang@haicheungchina.com"}, {"id": 1, "address": "Xiamen C&amp;D Enterprise Co.,Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 2, "address": "Xiamen Shipping Heavy Industry Company Limited", "contact": "", "mob": "", "mail": ""}]}], "Guangdong": [{"city": "Guangzhou", "count": 6, "lat": 23.1301964, "lon": 113.2592945, "entries": [{"id": 0, "address": "Guangzhou Shipyard International Co., Ltd.", "contact": "Sawyer - Guangzhou Office", "mob": "186 6570 3030", "mail": "sawyer_li@haicheungchina.com"}, {"id": 1, "address": "Guangzhou Wenchong Ship Factory Co.,Ltd.", "contact": "Daiky - Guangzhou Office", "mob": "135 7011 2062", "mail": "daiky_yao@haicheungchina.com"}, {"id": 2, "address": "lianyungang Wuzhou Shipbuilding Industry Co., Ltd.", "contact": "Daiky - Guangzhou Office", "mob": "135 7011 2062", "mail": "daiky_yao@haicheungchina.com"}, {"id": 3, "address": "Guangzhou Longxue", "contact": "", "mob": "", "mail": ""}, {"id": 4, "address": "Huangchuan Shipbuilding Marine Eng", "contact": "", "mob": "", "mail": ""}, {"id": 5, "address": "Guangdong Cosco Ocean Shipping Heavy Industry Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Jiangmen", "count": 2, "lat": 22.5816619, "lon": 113.0761073, "entries": [{"id": 0, "address": "Guangdong Jiangmen Shipyard Co.,Ltd.", "contact": "Daiky - Guangzhou Office", "mob": "135 7011 2062", "mail": "daiky_yao@haicheungchina.com"}, {"id": 1, "address": "Huanan Shipyard (Jiangmen) Limited Company", "contact": "Daiky - Guangzhou Office", "mob": "135 7011 2062", "mail": "daiky_yao@haicheungchina.com"}]}], "Guangxi": [{"city": "Nanning", "count": 1, "lat": 22.8193063, "lon": 108.3627211, "entries": [{"id": 0, "address": "Guangxin Shipbuilding &amp; Heavy Industry Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}], "Hebei": [{"city": "Shanhaiguan", "count": 1, "lat": 39.9987877, "lon": 119.7563671, "entries": [{"id": 0, "address": "Shanhaiguan Shipbuilding Industry Co.,Ltd.", "contact": "Hill - Dalian Office", "mob": "138 4262 7517", "mail": "hill_liu@haicheungchina.com"}]}], "Hubei": [{"city": "Hubei", "count": 1, "lat": 22.5470243, "lon": 114.1204778, "entries": [{"id": 0, "address": "Hubei Hechuang Heavy Ind. Co.,Ltd.", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}, {"city": "Wuhan", "count": 1, "lat": 30.5951051, "lon": 114.2999353, "entries": [{"id": 0, "address": "Wuchang Shipbuilding Industry Co., Ltd. Catering Center", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}, {"city": "Wuxue", "count": 1, "lat": 29.847035, "lon": 115.5562861, "entries": [{"id": 0, "address": "Wuxue Kaiyangxing", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}], "Huludao": [{"city": "Huludao", "count": 1, "lat": 40.6748912, "lon": 120.8130621, "entries": [{"id": 0, "address": "Bohai Shipbuilding Heavy Industry Bohai Shipbuilding Co., Ltd.", "contact": "Hill - Dalian Office", "mob": "138 4262 7517", "mail": "hill_liu@haicheungchina.com"}]}], "Jiangsu": [{"city": "Haimen", "count": 1, "lat": 31.8729183, "lon": 121.1771295, "entries": [{"id": 0, "address": "China Merchants Heavy Industry", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}]}, {"city": "Jiangsu", "count": 9, "lat": 32.4579729, "lon": 119.9181174, "entries": [{"id": 0, "address": "Jiangsu Yangtze River Shipyard Co.,Ltd.", "contact": "Wei - Jingjiang Office", "mob": "137 7357 0016", "mail": "wei_wei@haicheungchina.com"}, {"id": 1, "address": "Jiangsu Haitong Ocean Engineering Equipment Co., Ltd.", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 2, "address": "Jiangsu Jiaolong Heavy Industry Group", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 3, "address": "Jiangsu Jinling Shipyard Co.,Ltd.", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 4, "address": "AVIC Dingheng Shipbuilding", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 5, "address": "Jiangsu Zhenjiang Ship Factory", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 6, "address": "Jiangsu Ganghua Shipyard", "contact": "", "mob": "", "mail": ""}, {"id": 7, "address": "Jiangsu Hantong Ship Heavy Industry Co.,Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 8, "address": "Jiangsu Rongsheng Heavy Industries Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Lianyungang", "count": 1, "lat": 34.5933134, "lon": 119.2171662, "entries": [{"id": 0, "address": "Lianyungang Wuzhou Shipbuilding Industry Co., Ltd.", "contact": "Wei - Jingjiang Office", "mob": "137 7357 0016", "mail": "wei_wei@haicheungchina.com"}]}, {"city": "Nanjing", "count": 2, "lat": 32.0438284, "lon": 118.7788631, "entries": [{"id": 0, "address": "CSC Jinling Shipyard", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 1, "address": "Yonghua Ship Industry", "contact": "", "mob": "", "mail": ""}]}, {"city": "Nantong", "count": 14, "lat": 31.9827896, "lon": 120.8904588, "entries": [{"id": 0, "address": "NACKS", "contact": "Wei - Jingjiang Office", "mob": "137 7357 0016", "mail": "wei_wei@haicheungchina.com"}, {"id": 1, "address": "Nantong Cosco Ocean Shipping Chuanqi Ship Engineering Co.,Ltd.", "contact": "Wei - Jingjiang Office", "mob": "137 7357 0016", "mail": "wei_wei@haicheungchina.com"}, {"id": 2, "address": "Hantong Shipping Heavy Industry Co., Ltd. No.6 Branch", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 3, "address": "Nantong Changqingsha Shipyard", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 4, "address": "Nantong Run Bangzhongji Limited Company", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 5, "address": "Tongshun Shipbuilding", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 6, "address": "Tongmao Ships Co.,Ltd.", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 7, "address": "Nantong Runbang Ocean Engineering Equipment Limited Company East Gate", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 8, "address": "Nantong COSCO Heavy Industry Co., Ltd.", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 9, "address": "Nantong Xiangyu Ocean Equipment Co.,Ltd.", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 10, "address": "Nantong Cimc SOE", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 11, "address": "Nantong Mingde Heavy Industry Limited Company Xizhuangjian Branch", "contact": "", "mob": "", "mail": ""}, {"id": 12, "address": "Nantongshi Tongbao Shipbuilding Co.,Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 13, "address": "Jisheng Shipyard Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Qidong", "count": 1, "lat": 31.7951489, "lon": 121.6509342, "entries": [{"id": 0, "address": "Cosco (Qidong) Offshore Co.,LTD", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}]}, {"city": "Taizhou", "count": 6, "lat": 32.4579729, "lon": 119.9181174, "entries": [{"id": 0, "address": "New Century Shipbuilding", "contact": "Oliver - Jingjiang Office", "mob": "158 529 61232", "mail": "oliver_liu@haicheungchina.com"}, {"id": 1, "address": "Jingjiang Nanyang Shipping Manufacture Limited Company", "contact": "Oliver - Jingjiang Office", "mob": "158 529 61232", "mail": "oliver_liu@haicheungchina.com"}, {"id": 2, "address": "Taizhou San Fu Ship Engineering Company", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 3, "address": "Taizhou Kouan", "contact": "", "mob": "", "mail": ""}, {"id": 4, "address": "Taizhou Sanfu Industry and Trade Co.,Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 5, "address": "Taizhou Maple Leaf Ship Building", "contact": "", "mob": "", "mail": ""}]}, {"city": "Wu Xi Shi,", "count": 1, "lat": 39.9092478, "lon": 116.3398804, "entries": [{"id": 0, "address": "Chengxi Shipyard", "contact": "Oliver - Jingjiang Office", "mob": "158 529 61232", "mail": "oliver_liu@haicheungchina.com"}]}, {"city": "Yangzhou", "count": 7, "lat": 32.3968554, "lon": 119.4077658, "entries": [{"id": 0, "address": "Yangzhou Dayang Ship Building Co.,Ltd. Zhong Yun Fen Duan Manufacturing Base", "contact": "Oliver - Jingjiang Office", "mob": "158 529 61232", "mail": "oliver_liu@haicheungchina.com"}, {"id": 1, "address": "Yangzhou Dingheng Machinery Limited Company", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}, {"id": 2, "address": "Yangzhou Cosco Ocean Shipping Heavy Industry Co.,Ltd.", "contact": "James - Nanjing Office", "mob": "138 5148 5545", "mail": "james_shao@haicheungchina.com"}, {"id": 3, "address": "Yangzhou Dayang Shipbuilding Co.,Ltd.", "contact": "James - Nanjing Office", "mob": "138 5148 5545", "mail": "james_shao@haicheungchina.com"}, {"id": 4, "address": "Shuntian Ship Bldg. (Yangzhou) Co.", "contact": "James - Nanjing Office", "mob": "138 5148 5545", "mail": "james_shao@haicheungchina.com"}, {"id": 5, "address": "Yangzhou Kejin Chuanye Limited Company", "contact": "", "mob": "", "mail": ""}, {"id": 6, "address": "Yangzhou Cosco Ocean Shipping Heavy Industry Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Yizheng", "count": 1, "lat": 32.2750989, "lon": 119.1790898, "entries": [{"id": 0, "address": "Yizheng Shipyard", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}]}], "Jiangxi": [{"city": "Jiangxi", "count": 2, "lat": 28.3803015, "lon": 115.0153957, "entries": [{"id": 0, "address": "Jiangxi Jiangzhou United Shipbuilding Co.,Ltd.", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}, {"id": 1, "address": "Jiangxin Shipyard", "contact": "Ronny - Yantai Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}]}, {"city": "Jiujiang", "count": 2, "lat": 29.388607, "lon": 115.3820227, "entries": [{"id": 0, "address": "Dongze Ship Mfg. Co. Charging Stn.", "contact": "", "mob": "", "mail": ""}, {"id": 1, "address": "Xiangsheng Shipbuilding", "contact": "", "mob": "", "mail": ""}]}], "Kaohsiung": [{"city": "Siaogang", "count": 1, "lat": 22.5645135, "lon": 120.3538755, "entries": [{"id": 0, "address": "CSBC Corporation", "contact": "", "mob": "", "mail": ""}]}], "Liaoning": [{"city": "Dalian", "count": 4, "lat": 39.740278, "lon": 122.255833, "entries": [{"id": 0, "address": "Dalian Shipbuilding Heavy Industry Co.,Ltd.", "contact": "Tom - Dalian Office", "mob": "135 0428 3366", "mail": "tom_zhang@haicheungchina.com"}, {"id": 1, "address": "Dalian Cosco Shipbuilding Industry Co.,Ltd.", "contact": "Tom - Dalian Office", "mob": "135 0428 3366", "mail": "tom_zhang@haicheungchina.com"}, {"id": 2, "address": "Dalian Lushun Binhai", "contact": "", "mob": "", "mail": ""}, {"id": 3, "address": "Hengli (Dalian) Limited Company", "contact": "", "mob": "", "mail": ""}]}, {"city": "Panjin", "count": 1, "lat": 41.1796147, "lon": 122.0524321, "entries": [{"id": 0, "address": "Dajin Heavy Industry", "contact": "Sam - Nanjing Office", "mob": "152 0516 8298", "mail": "sam_ji@haicheungchina.com"}]}], "Qidong": [{"city": "Qidong", "count": 1, "lat": 26.762704, "lon": 112.0605399, "entries": [{"id": 0, "address": "Hongqiang Watercraft Heavy Industry", "contact": "", "mob": "", "mail": ""}]}], "Shaanxi": [{"city": "Xi'an", "count": 1, "lat": 34.261004, "lon": 108.9423363, "entries": [{"id": 0, "address": "Cuihua Road", "contact": "", "mob": "", "mail": ""}]}], "Shandong": [{"city": "Penglai", "count": 1, "lat": 37.7949103, "lon": 120.824268, "entries": [{"id": 0, "address": "Penglai Zhongbai Jinglu Chuanye Limited Company No.6 Gate", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}, {"city": "Qingdao", "count": 3, "lat": 36.0663249, "lon": 120.3777659, "entries": [{"id": 0, "address": "Huanghai Shipbuilding", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}, {"id": 1, "address": "Huangdao Qingdao Beihai Shipping Heavy Industry Company", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}, {"id": 2, "address": "Qingdao Yangfan Shipping Manufacture Limited Company", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}, {"city": "Rizhao", "count": 1, "lat": 35.4178833, "lon": 119.5213994, "entries": [{"id": 0, "address": "Rizhao Kingda Shipbuilding Heavy Industry C", "contact": "", "mob": "", "mail": ""}]}, {"city": "Weihai", "count": 4, "lat": 37.5120997, "lon": 122.1152599, "entries": [{"id": 0, "address": "AVIC Weihai Shipyard Co., Ltd.", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}, {"id": 1, "address": "Rushan Shipyard Gate 6", "contact": "", "mob": "", "mail": ""}, {"id": 2, "address": "Weihai Sanjin Chuanye Co., Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 3, "address": "COSCO (Weihai) Shipbuilding Making Technology Co., Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Yantai", "count": 1, "lat": 37.461928, "lon": 121.4425255, "entries": [{"id": 0, "address": "Yantai CIMC Raffles Offshore Ltd.", "contact": "Ronny - Yantai Office", "mob": "137 0890 9802", "mail": "ronny_yu@haicheungchina.com"}]}], "Shanghai": [{"city": "Shanghai", "count": 6, "lat": 31.2323437, "lon": 121.4691024, "entries": [{"id": 0, "address": "Hudong-Zhonghua Shipbuilding", "contact": "Steven - Shanghai Office", "mob": "135 2462 4857", "mail": "steven_yang@haicheungchina.com"}, {"id": 1, "address": "Shanghai Huarun Dadong Dockyard Co.,Ltd.", "contact": "Steven - Shanghai Office", "mob": "135 2462 4857", "mail": "steven_yang@haicheungchina.com"}, {"id": 2, "address": "Shanghai Jiangnan Changxing Shipbuilding Limited Company", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}, {"id": 3, "address": "Shanghai Waigaoqiao Shipbuilding Ocean Engineering Co.,Ltd.", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}, {"id": 4, "address": "WISON", "contact": "Nick - Jingjiang Office", "mob": "181 5133 0799", "mail": "nick_tong@haicheungchina.com"}, {"id": 5, "address": "Sinopacific Shipbuilding Group Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}], "Tianjin": [{"city": "Tianjin", "count": 1, "lat": 39.0844897, "lon": 117.1956724, "entries": [{"id": 0, "address": "Tianjin Xingang", "contact": "Tom - Dalian Office", "mob": "135 0428 3366", "mail": "tom_zhang@haicheungchina.com"}]}], "Tongzhou": [{"city": "Tongzhou", "count": 1, "lat": 39.8960646, "lon": 116.657085, "entries": [{"id": 0, "address": "Tongzhou Haitong Ship Rebuild Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}], "Wuhan": [{"city": "Qingshan", "count": 1, "lat": 30.6421206, "lon": 114.3797804, "entries": [{"id": 0, "address": "Qingshan Shipyard of Sinotrans &amp; CSC Ship Building Industry Corporation", "contact": "", "mob": "", "mail": ""}]}, {"city": "Wuhu", "count": 1, "lat": 30.7092336, "lon": 114.4241755, "entries": [{"id": 0, "address": "Sinotrans &amp; CSC Jiangdong Shipyard", "contact": "", "mob": "", "mail": ""}]}], "Zhejiang": [{"city": "Changhong", "count": 1, "lat": 29.2366578, "lon": 118.2251668, "entries": [{"id": 0, "address": "Changhong International Shipyard Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Ningbo", "count": 2, "lat": 29.8622194, "lon": 121.6203873, "entries": [{"id": 0, "address": "Xinle Shipbuilding", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}, {"id": 1, "address": "Samsung Heavy Industries (Ningbo) Co.,Ltd.", "contact": "", "mob": "", "mail": ""}]}, {"city": "Taizhou", "count": 1, "lat": 28.6581723, "lon": 121.4163876, "entries": [{"id": 0, "address": "Haidong Shipyard", "contact": "", "mob": "", "mail": ""}]}, {"city": "Zhejiang", "count": 3, "lat": 28.6581723, "lon": 121.4163876, "entries": [{"id": 0, "address": "Zhejiang Tianshi", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}, {"id": 1, "address": "Zhejiang Shipbuilding Co.,Ltd.", "contact": "", "mob": "", "mail": ""}, {"id": 2, "address": "Zhejiang Zhenghe Shipbuilding", "contact": "", "mob": "", "mail": ""}]}, {"city": "Zhoushan", "count": 2, "lat": 29.9873344, "lon": 122.2030363, "entries": [{"id": 0, "address": "Dongpeng Ship Xiuzao Limited Company", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}, {"id": 1, "address": "Zhoushan COSCO Shipyard Co., Ltd.", "contact": "Jason - Shanghai Office", "mob": "135 6476 3168", "mail": "jason_jiang@haicheungchina.com"}]}]};
+      const overrides = loadOverrides();
+
+      // Apply overrides: edits & new rows
+      function applyOverrides() {
+        const addQueue = [];
+        Object.keys(DATA).forEach(reg => {
+          (DATA[reg]||[]).forEach(c => {
+            const byId = new Map((c.entries||[]).map(e => [String(e.id), e]));
+            Object.keys(overrides).forEach(k => {
+              const [oreg, ocity, oid] = k.split('||');
+              if (oreg === reg && ocity === c.city) {
+                const ov = overrides[k] || {};
+                const exists = byId.get(String(oid));
+                if (exists) {
+                  if (ov.address != null) exists.address = ov.address;
+                  if (ov.contact != null) exists.contact = ov.contact;
+                  if (ov.mob     != null) exists.mob     = ov.mob;
+                  if (ov.mail    != null) exists.mail    = ov.mail;
+                } else if (ov && ov._new) {
+                  addQueue.push({reg, city: c.city, entry: {
+                    id: oid, address: ov.address||'', contact: ov.contact||'', mob: ov.mob||'', mail: ov.mail||''
+                  }});
+                }
+              }
+            });
+          });
+        });
+        addQueue.forEach(it => {
+          const arr = (DATA[it.reg]||[]).find(x => x.city === it.city)?.entries;
+          if (arr) arr.push(it.entry);
+        });
+      }
+      applyOverrides();
+
+      // Map markers lookup
+      const markerByKey = new Map();
+      map.eachLayer(l => {
+        if (l && typeof l.getLatLng === 'function' && l instanceof L.CircleMarker) {
+          const ll = l.getLatLng();
+          markerByKey.set(ll.lat.toFixed(6)+","+ll.lng.toFixed(6), l);
+        }
+      });
+
+      // Left panel
+      const panel = L.control({position:'topleft'});
+      panel.onAdd = function() {
+        const div = L.DomUtil.create('div');
+        div.style.background='white';
+        div.style.padding='10px';
+        div.style.borderRadius='10px';
+        div.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)';
+        div.style.width='520px';
+        div.style.maxHeight='80vh';
+        div.style.overflow='auto';
+        div.style.font='14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+        div.innerHTML =
+          '<b>Browse / Edit by Region & City</b>' +
+          '<div style="margin-top:8px; display:flex; gap:6px;">' +
+            '<input id="searchCity" placeholder="Search city..." style="flex:1;padding:6px;border:1px solid #ccc;border-radius:6px">' +
+            '<button id="exportAll" title="Download all (CSV)" style="padding:6px 8px;border:1px solid #ccc;border-radius:6px;background:#f6f6f6;cursor:pointer;">Export CSV</button>' +
+          '</div>' +
+          '<div id="regionList" style="margin-top:10px;"></div>' +
+          '<hr style="margin:12px 0">' +
+          '<div id="cityHeader" style="font-weight:600"></div>' +
+          '<div id="addrCount" style="margin:4px 0 6px 0"></div>' +
+          '<div style="margin:6px 0 10px 0;"><button id="addRowBtn" style="display:none;padding:6px 8px;border:1px solid #ccc;border-radius:6px;background:#f6f6f6;cursor:pointer;">+ Add address</button> <button id="exportCity" style="display:none;padding:6px 8px;border:1px solid #ccc;border-radius:6px;background:#f6f6f6;cursor:pointer;">Export City CSV</button></div>' +
+          '<div id="addrList"></div>';
+        return div;
+      };
+      panel.addTo(map);
+
+      const regionList = document.getElementById('regionList');
+      const cityHeader = document.getElementById('cityHeader');
+      const addrCount  = document.getElementById('addrCount');
+      const addrList   = document.getElementById('addrList');
+      const searchCity = document.getElementById('searchCity');
+      const exportAll  = document.getElementById('exportAll');
+      const addRowBtn  = document.getElementById('addRowBtn');
+      const exportCity = document.getElementById('exportCity');
+
+      function escapeHtml(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+      function renderRegions(filter) {
+        filter = (filter||'').trim().toLowerCase();
+        regionList.innerHTML = '';
+        const names = Object.keys(DATA).sort((a,b)=>a.localeCompare(b));
+        names.forEach(reg => {
+          const cities = (DATA[reg]||[]).filter(c => !filter || (c.city && c.city.toLowerCase().includes(filter)));
+          if (!cities.length) return;
+
+          const wrap = document.createElement('div');
+          wrap.style.marginBottom = '8px';
+
+          const title = document.createElement('div');
+          title.innerHTML = '<b>' + escapeHtml(reg) + '</b> — ' + cities.length + ' city(ies)';
+          wrap.appendChild(title);
+
+          const ul = document.createElement('ul');
+          ul.style.margin = '6px 0 0 16px';
+          cities.forEach(c => {
+            const li = document.createElement('li');
+            li.style.cursor = 'pointer';
+            li.innerHTML = escapeHtml(c.city || '(No city)') + ' <span style="color:#666">(' + c.count + ')</span>';
+            li.onclick = () => showCity(reg, c);
+            ul.appendChild(li);
+          });
+
+          wrap.appendChild(ul);
+          regionList.appendChild(wrap);
+        });
+      }
+
+      function showCity(reg, c) {
+        cityHeader.textContent = (c.city || '(No city)') + ' — ' + reg;
+        addrCount.textContent  = (c.entries?.length || 0) + ' address(es)';
+        addRowBtn.style.display = 'inline-block';
+        exportCity.style.display = 'inline-block';
+
+        // Editable grid: Address | Contact | Phone | Email | Save
+        const items = c.entries || [];
+        let html = '';
+        html += '<div style="display:grid; grid-template-columns: 1.2fr 0.9fr 0.8fr 1fr auto; gap:6px; align-items:center; font-weight:600; margin-bottom:6px;">' +
+                  '<div>Address</div><div>Contact</div><div>Phone</div><div>Email</div><div style="text-align:right;">Save</div>' +
+                '</div>';
+
+        items.forEach((it) => {
+          const id = String(it.id);
+          const k = keyFor(reg, c.city, id);
+          const addr   = (it.address || '');
+          const contact= (it.contact || '');
+          const mob    = (it.mob || '');
+          const mail   = (it.mail || '');
+
+          html += '<div class="row" style="display:grid; grid-template-columns: 1.2fr 0.9fr 0.8fr 1fr auto; gap:6px; align-items:center; margin-bottom:6px;">' +
+                    '<input type="text" class="addrInp" data-k="'+k+'" value="'+addr+'" placeholder="Address" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+                    '<input type="text" class="contInp" data-k="'+k+'" value="'+contact+'" placeholder="Contact" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+                    '<input type="text" class="mobInp"  data-k="'+k+'" value="'+mob+'" placeholder="Phone" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+                    '<input type="email" class="mailInp" data-k="'+k+'" value="'+mail+'" placeholder="Email" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+                    '<button class="saveBtn" data-k="'+k+'" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;background:#eaeaea;cursor:pointer;">Save</button>' +
+                  '</div>';
+        });
+
+        addrList.innerHTML = html;
+
+        // Wire save buttons
+        addrList.querySelectorAll('.saveBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const k = btn.getAttribute('data-k');
+            const addrEl = addrList.querySelector('.addrInp[data-k="'+k+'"]');
+            const contEl = addrList.querySelector('.contInp[data-k="'+k+'"]');
+            const mobEl  = addrList.querySelector('.mobInp[data-k="'+k+'"]');
+            const mailEl = addrList.querySelector('.mailInp[data-k="'+k+'"]');
+            const newAddr = (addrEl?.value || '').trim();
+            const newCont = (contEl?.value || '').trim();
+            const newMob  = (mobEl?.value  || '').trim();
+            const newMail = (mailEl?.value || '').trim();
+            const ov = overrides[k] || {};
+            ov.address = newAddr; ov.contact = newCont; ov.mob = newMob; ov.mail = newMail;
+            overrides[k] = ov;
+            saveOverrides(overrides);
+            [addrEl,contEl,mobEl,mailEl].forEach(el => { if (el) { el.style.background = '#f6fff6'; setTimeout(()=>{ el.style.background = ''; }, 500); } });
+          });
+        });
+
+        // Add new row
+        addRowBtn.onclick = () => {
+          const newId = 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+          const k = keyFor(reg, c.city, newId);
+          overrides[k] = { address: '', contact: '', mob: '', mail: '', _new: true };
+          saveOverrides(overrides);
+
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.style.cssText = 'display:grid; grid-template-columns: 1.2fr 0.9fr 0.8fr 1fr auto; gap:6px; align-items:center; margin-bottom:6px;';
+          row.innerHTML =
+            '<input type="text"  class="addrInp" data-k="'+k+'" placeholder="New address" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+            '<input type="text"  class="contInp" data-k="'+k+'" placeholder="Contact" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+            '<input type="text"  class="mobInp"  data-k="'+k+'" placeholder="Phone" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+            '<input type="email" class="mailInp" data-k="'+k+'" placeholder="Email" style="padding:6px;border:1px solid #ccc;border-radius:6px;">' +
+            '<button class="saveBtn" data-k="'+k+'" style="padding:6px 10px;border:1px solid #ccc;border-radius:6px;background:#eaeaea;cursor:pointer;">Save</button>';
+
+          addrList.appendChild(row);
+          addrCount.textContent = (parseInt(addrCount.textContent) + 1) + ' address(es)';
+
+          row.querySelector('.saveBtn').addEventListener('click', () => {
+            const addrEl = row.querySelector('.addrInp');
+            const contEl = row.querySelector('.contInp');
+            const mobEl  = row.querySelector('.mobInp');
+            const mailEl = row.querySelector('.mailInp');
+            const newAddr = (addrEl?.value || '').trim();
+            const newCont = (contEl?.value || '').trim();
+            const newMob  = (mobEl?.value  || '').trim();
+            const newMail = (mailEl?.value || '').trim();
+            overrides[k] = { address: newAddr, contact: newCont, mob: newMob, mail: newMail, _new: true };
+            saveOverrides(overrides);
+            [addrEl,contEl,mobEl,mailEl].forEach(el => { if (el) { el.style.background = '#f6fff6'; setTimeout(()=>{ el.style.background = ''; }, 500); } });
+          });
+        };
+
+        // Export CSV for this city
+        exportCity.onclick = () => {
+          const rows = [];
+          // originals with overrides
+          (c.entries||[]).forEach(e => {
+            const k = keyFor(reg, c.city, String(e.id));
+            const ov = overrides[k];
+            rows.push({
+              Region: reg,
+              City: c.city,
+              Address: (ov && ov.address!=null) ? ov.address : (e.address||''),
+              Contact: (ov && ov.contact!=null) ? ov.contact : (e.contact||''),
+              MOB:     (ov && ov.mob    !=null) ? ov.mob     : (e.mob||''),
+              MAIL:    (ov && ov.mail   !=null) ? ov.mail    : (e.mail||'')
+            });
+          });
+          // new entries
+          Object.keys(overrides).forEach(k => {
+            const [oreg, ocity] = k.split('||');
+            const ov = overrides[k];
+            if (ov && ov._new && oreg === reg && ocity === c.city) {
+              rows.push({ Region: reg, City: c.city, Address: ov.address||'', Contact: ov.contact||'', MOB: ov.mob||'', MAIL: ov.mail||'' });
+            }
+          });
+          const csv = rowsToCSV(rows, ['Region','City','Address','Contact','MOB','MAIL']);
+          download((c.city||'city').replace(/\W+/g,'_') + '_contacts.csv', csv);
+        };
+
+        // Fly to marker + open popup
+        const key = (c.lat).toFixed(6) + ',' + (c.lon).toFixed(6);
+        const m = markerByKey.get(key);
+        if (m) { map.flyTo([c.lat, c.lon], 8, {duration:1.0}); m.openPopup(); }
+      }
+
+      // Marker → focus city
+      markerByKey.forEach(m => {
+        m.on('click', () => {
+          const ll = m.getLatLng();
+          let gotC = null, gotR = '';
+          Object.keys(DATA).forEach(reg => {
+            (DATA[reg]||[]).forEach(c => {
+              if (Math.abs(c.lat-ll.lat)<1e-5 && Math.abs(c.lon-ll.lng)<1e-5) { gotC = c; gotR = reg; }
+            });
+          });
+          if (gotC) showCity(gotR, gotC);
+        });
+      });
+
+      // Export ALL
+      exportAll.onclick = () => {
+        const rows = [];
+        Object.keys(DATA).forEach(reg => {
+          (DATA[reg]||[]).forEach(c => {
+            (c.entries||[]).forEach(e => {
+              const k = keyFor(reg, c.city, String(e.id));
+              const ov = overrides[k];
+              rows.push({
+                Region: reg,
+                City: c.city,
+                Address: (ov && ov.address!=null) ? ov.address : (e.address||''),
+                Contact: (ov && ov.contact!=null) ? ov.contact : (e.contact||''),
+                MOB:     (ov && ov.mob    !=null) ? ov.mob     : (e.mob||''),
+                MAIL:    (ov && ov.mail   !=null) ? ov.mail    : (e.mail||'')
+              });
+            });
+            Object.keys(overrides).forEach(k => {
+              const [oreg, ocity] = k.split('||');
+              const ov = overrides[k];
+              if (ov && ov._new && oreg === reg && ocity === c.city) {
+                rows.push({ Region: reg, City: c.city, Address: ov.address||'', Contact: ov.contact||'', MOB: ov.mob||'', MAIL: ov.mail||'' });
+              }
+            });
+          });
+        });
+        const csv = rowsToCSV(rows, ['Region','City','Address','Contact','MOB','MAIL']);
+        download('all_cities_contacts.csv', csv);
+      };
+
+      // Search + initial render
+      searchCity.addEventListener('input', () => renderRegions(searchCity.value));
+      renderRegions();
+
+    } catch (e) {
+      console.error('Panel init error:', e);
+      alert('Map UI script error: ' + e.message);
+    }
+  }).catch(e => console.error('Map not ready:', e));
+})();
+</script>
+    
+            <div class="folium-map" id="map_d3123ea09609e1987c783e45119fcf9c" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_d3123ea09609e1987c783e45119fcf9c = L.map(
+                "map_d3123ea09609e1987c783e45119fcf9c",
+                {
+                    center: [35.0, 103.8],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 4,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+            L.control.scale().addTo(map_d3123ea09609e1987c783e45119fcf9c);
+
+            
+
+        
+    
+            var tile_layer_487ed5703c2f7f81edf9faded743d3cc = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_487ed5703c2f7f81edf9faded743d3cc.addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+            var locate_control_7970f3fe59f57654f20e5e63e771179d = L.control.locate(
+                {"setView": true}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+            
+        
+    
+            var circle_marker_d6eacbba16bc77e89c8639cd5ddde1c1 = L.circleMarker(
+                [30.6671088, 117.4859885],
+                {"bubblingMouseEvents": true, "color": "rgb(155,194,196)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(155,194,196)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_ece34c3f2348f4ecd9cd61279a8624d4 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_6533288a9ba667b29bd9743fa8cd6fc5 = $(`<div id="html_6533288a9ba667b29bd9743fa8cd6fc5" style="width: 100.0%; height: 100.0%;"><b>Chizhou</b><br>Anhui<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_ece34c3f2348f4ecd9cd61279a8624d4.setContent(html_6533288a9ba667b29bd9743fa8cd6fc5);
+            
+        
+
+        circle_marker_d6eacbba16bc77e89c8639cd5ddde1c1.bindPopup(popup_ece34c3f2348f4ecd9cd61279a8624d4)
+        ;
+
+        
+    
+    
+            circle_marker_d6eacbba16bc77e89c8639cd5ddde1c1.bindTooltip(
+                `<div>
+                     Chizhou (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_387bc62597e3d58ffb71c547338a808c = L.circleMarker(
+                [31.1800568, 118.2141777],
+                {"bubblingMouseEvents": true, "color": "rgb(155,194,196)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(155,194,196)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_a373299071606544bd49d8fce40fd6f3 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_bdc24fc1a21fb6fe7b4ac021b39bf281 = $(`<div id="html_bdc24fc1a21fb6fe7b4ac021b39bf281" style="width: 100.0%; height: 100.0%;"><b>Wuhu</b><br>Anhui<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_a373299071606544bd49d8fce40fd6f3.setContent(html_bdc24fc1a21fb6fe7b4ac021b39bf281);
+            
+        
+
+        circle_marker_387bc62597e3d58ffb71c547338a808c.bindPopup(popup_a373299071606544bd49d8fce40fd6f3)
+        ;
+
+        
+    
+    
+            circle_marker_387bc62597e3d58ffb71c547338a808c.bindTooltip(
+                `<div>
+                     Wuhu (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_f2a1f6cea0c7f23cb19b9140cc92b353 = L.circleMarker(
+                [30.5276161, 117.0515956],
+                {"bubblingMouseEvents": true, "color": "rgb(170,202,172)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(170,202,172)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_d2bb86df50ad321280d619cb1faca033 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_d6fe3dd3c2b3feafcde684176b445a91 = $(`<div id="html_d6fe3dd3c2b3feafcde684176b445a91" style="width: 100.0%; height: 100.0%;"><b>Anqing</b><br>Anqing<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_d2bb86df50ad321280d619cb1faca033.setContent(html_d6fe3dd3c2b3feafcde684176b445a91);
+            
+        
+
+        circle_marker_f2a1f6cea0c7f23cb19b9140cc92b353.bindPopup(popup_d2bb86df50ad321280d619cb1faca033)
+        ;
+
+        
+    
+    
+            circle_marker_f2a1f6cea0c7f23cb19b9140cc92b353.bindTooltip(
+                `<div>
+                     Anqing (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_ffae68481a18a58169004cb14f2c93ff = L.circleMarker(
+                [30.8101669, 108.4034084],
+                {"bubblingMouseEvents": true, "color": "rgb(160,172,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(160,172,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_963f061e10c59e1f830882e62edee6d4 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_a202d6304efa7a3e71dd6eb315311925 = $(`<div id="html_a202d6304efa7a3e71dd6eb315311925" style="width: 100.0%; height: 100.0%;"><b>Chongqing</b><br>Chongqing<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_963f061e10c59e1f830882e62edee6d4.setContent(html_a202d6304efa7a3e71dd6eb315311925);
+            
+        
+
+        circle_marker_ffae68481a18a58169004cb14f2c93ff.bindPopup(popup_963f061e10c59e1f830882e62edee6d4)
+        ;
+
+        
+    
+    
+            circle_marker_ffae68481a18a58169004cb14f2c93ff.bindTooltip(
+                `<div>
+                     Chongqing (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_791fd9ad28009257b164a13aa7f41a9e = L.circleMarker(
+                [26.9120598, 118.981458],
+                {"bubblingMouseEvents": true, "color": "rgb(167,200,167)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(167,200,167)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_e7fe275bee00b275b24de4a2fc1c2ae1 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_c79c5477d3c022c4ac563cfd8450c8f5 = $(`<div id="html_c79c5477d3c022c4ac563cfd8450c8f5" style="width: 100.0%; height: 100.0%;"><b>Fujian</b><br>Fujian<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_e7fe275bee00b275b24de4a2fc1c2ae1.setContent(html_c79c5477d3c022c4ac563cfd8450c8f5);
+            
+        
+
+        circle_marker_791fd9ad28009257b164a13aa7f41a9e.bindPopup(popup_e7fe275bee00b275b24de4a2fc1c2ae1)
+        ;
+
+        
+    
+    
+            circle_marker_791fd9ad28009257b164a13aa7f41a9e.bindTooltip(
+                `<div>
+                     Fujian (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_f8f48130662e24f8f24bc9b2f8b75ec4 = L.circleMarker(
+                [26.0913222, 119.4909947],
+                {"bubblingMouseEvents": true, "color": "rgb(167,200,167)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(167,200,167)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_46b1196696551a2e965e9328802ef283 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_87324eecfb3d2860029e082281b9c029 = $(`<div id="html_87324eecfb3d2860029e082281b9c029" style="width: 100.0%; height: 100.0%;"><b>Mawei</b><br>Fujian<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_46b1196696551a2e965e9328802ef283.setContent(html_87324eecfb3d2860029e082281b9c029);
+            
+        
+
+        circle_marker_f8f48130662e24f8f24bc9b2f8b75ec4.bindPopup(popup_46b1196696551a2e965e9328802ef283)
+        ;
+
+        
+    
+    
+            circle_marker_f8f48130662e24f8f24bc9b2f8b75ec4.bindTooltip(
+                `<div>
+                     Mawei (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_d813265e1c4966f40dbf72555eaa0505 = L.circleMarker(
+                [24.5438732, 118.0768065],
+                {"bubblingMouseEvents": true, "color": "rgb(167,200,167)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(167,200,167)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 9, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_e8098b773f8c3b5a48fa713255edbe88 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_556a338c8c1b3365fae1e31c2bac3393 = $(`<div id="html_556a338c8c1b3365fae1e31c2bac3393" style="width: 100.0%; height: 100.0%;"><b>Xiamen</b><br>Fujian<br>3 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_e8098b773f8c3b5a48fa713255edbe88.setContent(html_556a338c8c1b3365fae1e31c2bac3393);
+            
+        
+
+        circle_marker_d813265e1c4966f40dbf72555eaa0505.bindPopup(popup_e8098b773f8c3b5a48fa713255edbe88)
+        ;
+
+        
+    
+    
+            circle_marker_d813265e1c4966f40dbf72555eaa0505.bindTooltip(
+                `<div>
+                     Xiamen (3)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_ef2e773c2edf054252b50403a7eace90 = L.circleMarker(
+                [23.1301964, 113.2592945],
+                {"bubblingMouseEvents": true, "color": "rgb(156,186,146)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(156,186,146)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 12, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_8ffe35a6d036d19208a491a8856a54d8 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_584847d4a7dd202a7d59edde8fcb8ede = $(`<div id="html_584847d4a7dd202a7d59edde8fcb8ede" style="width: 100.0%; height: 100.0%;"><b>Guangzhou</b><br>Guangdong<br>6 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_8ffe35a6d036d19208a491a8856a54d8.setContent(html_584847d4a7dd202a7d59edde8fcb8ede);
+            
+        
+
+        circle_marker_ef2e773c2edf054252b50403a7eace90.bindPopup(popup_8ffe35a6d036d19208a491a8856a54d8)
+        ;
+
+        
+    
+    
+            circle_marker_ef2e773c2edf054252b50403a7eace90.bindTooltip(
+                `<div>
+                     Guangzhou (6)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_9cd110806353b1ff2f7f8727f67e621e = L.circleMarker(
+                [22.5816619, 113.0761073],
+                {"bubblingMouseEvents": true, "color": "rgb(156,186,146)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(156,186,146)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_b83f2fa97b5b39d99e8bd8f747b431e9 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_311f7d3006ec0fab5016f2655bea2e16 = $(`<div id="html_311f7d3006ec0fab5016f2655bea2e16" style="width: 100.0%; height: 100.0%;"><b>Jiangmen</b><br>Guangdong<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_b83f2fa97b5b39d99e8bd8f747b431e9.setContent(html_311f7d3006ec0fab5016f2655bea2e16);
+            
+        
+
+        circle_marker_9cd110806353b1ff2f7f8727f67e621e.bindPopup(popup_b83f2fa97b5b39d99e8bd8f747b431e9)
+        ;
+
+        
+    
+    
+            circle_marker_9cd110806353b1ff2f7f8727f67e621e.bindTooltip(
+                `<div>
+                     Jiangmen (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_0303a7ea6d1fc159b766c20faba23b74 = L.circleMarker(
+                [22.8193063, 108.3627211],
+                {"bubblingMouseEvents": true, "color": "rgb(201,179,202)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,179,202)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_9bbd9c534ab8ee4ce32566e75d3f8275 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_88c4561a9f1e31de3024e3d5567e60e0 = $(`<div id="html_88c4561a9f1e31de3024e3d5567e60e0" style="width: 100.0%; height: 100.0%;"><b>Nanning</b><br>Guangxi<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_9bbd9c534ab8ee4ce32566e75d3f8275.setContent(html_88c4561a9f1e31de3024e3d5567e60e0);
+            
+        
+
+        circle_marker_0303a7ea6d1fc159b766c20faba23b74.bindPopup(popup_9bbd9c534ab8ee4ce32566e75d3f8275)
+        ;
+
+        
+    
+    
+            circle_marker_0303a7ea6d1fc159b766c20faba23b74.bindTooltip(
+                `<div>
+                     Nanning (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6a19f62d1c6525f4b97e5208b11e2b51 = L.circleMarker(
+                [39.9987877, 119.7563671],
+                {"bubblingMouseEvents": true, "color": "rgb(149,149,172)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(149,149,172)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_06ed5f6bc53537594d494c1b7c2ea13c = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_d731694c6cf02fbe35fa1e204237f9d4 = $(`<div id="html_d731694c6cf02fbe35fa1e204237f9d4" style="width: 100.0%; height: 100.0%;"><b>Shanhaiguan</b><br>Hebei<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_06ed5f6bc53537594d494c1b7c2ea13c.setContent(html_d731694c6cf02fbe35fa1e204237f9d4);
+            
+        
+
+        circle_marker_6a19f62d1c6525f4b97e5208b11e2b51.bindPopup(popup_06ed5f6bc53537594d494c1b7c2ea13c)
+        ;
+
+        
+    
+    
+            circle_marker_6a19f62d1c6525f4b97e5208b11e2b51.bindTooltip(
+                `<div>
+                     Shanhaiguan (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6cb9f4b1acd27254da5957776fbdf7d2 = L.circleMarker(
+                [22.5470243, 114.1204778],
+                {"bubblingMouseEvents": true, "color": "rgb(197,172,160)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(197,172,160)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_9194c59d3de960de1a79dabe43cccd68 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_128e2ddb44ea75e930159715be0ed733 = $(`<div id="html_128e2ddb44ea75e930159715be0ed733" style="width: 100.0%; height: 100.0%;"><b>Hubei</b><br>Hubei<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_9194c59d3de960de1a79dabe43cccd68.setContent(html_128e2ddb44ea75e930159715be0ed733);
+            
+        
+
+        circle_marker_6cb9f4b1acd27254da5957776fbdf7d2.bindPopup(popup_9194c59d3de960de1a79dabe43cccd68)
+        ;
+
+        
+    
+    
+            circle_marker_6cb9f4b1acd27254da5957776fbdf7d2.bindTooltip(
+                `<div>
+                     Hubei (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_ccfca78844dafc398577aaa4fcf384a7 = L.circleMarker(
+                [30.5951051, 114.2999353],
+                {"bubblingMouseEvents": true, "color": "rgb(197,172,160)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(197,172,160)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_101b31728a72838c34fbfe4346b78ee6 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_0d30d962d41b9088c37f1c06448d2b36 = $(`<div id="html_0d30d962d41b9088c37f1c06448d2b36" style="width: 100.0%; height: 100.0%;"><b>Wuhan</b><br>Hubei<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_101b31728a72838c34fbfe4346b78ee6.setContent(html_0d30d962d41b9088c37f1c06448d2b36);
+            
+        
+
+        circle_marker_ccfca78844dafc398577aaa4fcf384a7.bindPopup(popup_101b31728a72838c34fbfe4346b78ee6)
+        ;
+
+        
+    
+    
+            circle_marker_ccfca78844dafc398577aaa4fcf384a7.bindTooltip(
+                `<div>
+                     Wuhan (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_bc8323007816acdc5fa83542b960861e = L.circleMarker(
+                [29.847035, 115.5562861],
+                {"bubblingMouseEvents": true, "color": "rgb(197,172,160)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(197,172,160)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_4b8b78d696836623ef9a2aaa06efe199 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_de72307c0c3be0101e375023fdc72360 = $(`<div id="html_de72307c0c3be0101e375023fdc72360" style="width: 100.0%; height: 100.0%;"><b>Wuxue</b><br>Hubei<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_4b8b78d696836623ef9a2aaa06efe199.setContent(html_de72307c0c3be0101e375023fdc72360);
+            
+        
+
+        circle_marker_bc8323007816acdc5fa83542b960861e.bindPopup(popup_4b8b78d696836623ef9a2aaa06efe199)
+        ;
+
+        
+    
+    
+            circle_marker_bc8323007816acdc5fa83542b960861e.bindTooltip(
+                `<div>
+                     Wuxue (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_16b4ce750c7e708fccd2d023105646ac = L.circleMarker(
+                [40.6748912, 120.8130621],
+                {"bubblingMouseEvents": true, "color": "rgb(168,173,144)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(168,173,144)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_a0377191bc08ff4f850f1726473fe1ff = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_22371fb6af595ef4d7779e04f7a2b5f9 = $(`<div id="html_22371fb6af595ef4d7779e04f7a2b5f9" style="width: 100.0%; height: 100.0%;"><b>Huludao</b><br>Huludao<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_a0377191bc08ff4f850f1726473fe1ff.setContent(html_22371fb6af595ef4d7779e04f7a2b5f9);
+            
+        
+
+        circle_marker_16b4ce750c7e708fccd2d023105646ac.bindPopup(popup_a0377191bc08ff4f850f1726473fe1ff)
+        ;
+
+        
+    
+    
+            circle_marker_16b4ce750c7e708fccd2d023105646ac.bindTooltip(
+                `<div>
+                     Huludao (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_300a98e9d597c6d98e6301f73a88ebca = L.circleMarker(
+                [31.8729183, 121.1771295],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_4cdba112e974829ff056cc49aca84fae = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_e5612a8a1bb2fdff74b52f127ec25156 = $(`<div id="html_e5612a8a1bb2fdff74b52f127ec25156" style="width: 100.0%; height: 100.0%;"><b>Haimen</b><br>Jiangsu<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_4cdba112e974829ff056cc49aca84fae.setContent(html_e5612a8a1bb2fdff74b52f127ec25156);
+            
+        
+
+        circle_marker_300a98e9d597c6d98e6301f73a88ebca.bindPopup(popup_4cdba112e974829ff056cc49aca84fae)
+        ;
+
+        
+    
+    
+            circle_marker_300a98e9d597c6d98e6301f73a88ebca.bindTooltip(
+                `<div>
+                     Haimen (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_3c13301b3309dbd7dc737e6f92f08e8f = L.circleMarker(
+                [32.4579729, 119.9181174],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 15, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_07f503b89af6af96e24e45e52633922e = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_143d7d29d27ba226d2c7bb8d88a6e246 = $(`<div id="html_143d7d29d27ba226d2c7bb8d88a6e246" style="width: 100.0%; height: 100.0%;"><b>Jiangsu</b><br>Jiangsu<br>9 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_07f503b89af6af96e24e45e52633922e.setContent(html_143d7d29d27ba226d2c7bb8d88a6e246);
+            
+        
+
+        circle_marker_3c13301b3309dbd7dc737e6f92f08e8f.bindPopup(popup_07f503b89af6af96e24e45e52633922e)
+        ;
+
+        
+    
+    
+            circle_marker_3c13301b3309dbd7dc737e6f92f08e8f.bindTooltip(
+                `<div>
+                     Jiangsu (9)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_45b3aeb3518080c143d0f59531e7d8cb = L.circleMarker(
+                [34.5933134, 119.2171662],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_349c0ae59c8c09035059fe4f3459e503 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_80928fdc076452ccf878db4e7b96e40f = $(`<div id="html_80928fdc076452ccf878db4e7b96e40f" style="width: 100.0%; height: 100.0%;"><b>Lianyungang</b><br>Jiangsu<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_349c0ae59c8c09035059fe4f3459e503.setContent(html_80928fdc076452ccf878db4e7b96e40f);
+            
+        
+
+        circle_marker_45b3aeb3518080c143d0f59531e7d8cb.bindPopup(popup_349c0ae59c8c09035059fe4f3459e503)
+        ;
+
+        
+    
+    
+            circle_marker_45b3aeb3518080c143d0f59531e7d8cb.bindTooltip(
+                `<div>
+                     Lianyungang (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6330b0b8e08e4cf13ec5464c5e3a5f10 = L.circleMarker(
+                [32.0438284, 118.7788631],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_03925b9ae09851c121666e471a23cf54 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_784163ec32a6937aefcb7af303b49e41 = $(`<div id="html_784163ec32a6937aefcb7af303b49e41" style="width: 100.0%; height: 100.0%;"><b>Nanjing</b><br>Jiangsu<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_03925b9ae09851c121666e471a23cf54.setContent(html_784163ec32a6937aefcb7af303b49e41);
+            
+        
+
+        circle_marker_6330b0b8e08e4cf13ec5464c5e3a5f10.bindPopup(popup_03925b9ae09851c121666e471a23cf54)
+        ;
+
+        
+    
+    
+            circle_marker_6330b0b8e08e4cf13ec5464c5e3a5f10.bindTooltip(
+                `<div>
+                     Nanjing (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_589cdda8cd312d441b3604c2f33ccc1c = L.circleMarker(
+                [31.9827896, 120.8904588],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 20, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_2e82fc1b90342316f4528f553281cc61 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_60d09993e40123e8b4e83b2eb3e4e5c6 = $(`<div id="html_60d09993e40123e8b4e83b2eb3e4e5c6" style="width: 100.0%; height: 100.0%;"><b>Nantong</b><br>Jiangsu<br>14 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_2e82fc1b90342316f4528f553281cc61.setContent(html_60d09993e40123e8b4e83b2eb3e4e5c6);
+            
+        
+
+        circle_marker_589cdda8cd312d441b3604c2f33ccc1c.bindPopup(popup_2e82fc1b90342316f4528f553281cc61)
+        ;
+
+        
+    
+    
+            circle_marker_589cdda8cd312d441b3604c2f33ccc1c.bindTooltip(
+                `<div>
+                     Nantong (14)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_66953289376d07cecae8c61974ddbf2b = L.circleMarker(
+                [31.7951489, 121.6509342],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_38e1989e457a6a83d4da97709dba25a2 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_761781943b27d677ce53cf6a3f0064cb = $(`<div id="html_761781943b27d677ce53cf6a3f0064cb" style="width: 100.0%; height: 100.0%;"><b>Qidong</b><br>Jiangsu<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_38e1989e457a6a83d4da97709dba25a2.setContent(html_761781943b27d677ce53cf6a3f0064cb);
+            
+        
+
+        circle_marker_66953289376d07cecae8c61974ddbf2b.bindPopup(popup_38e1989e457a6a83d4da97709dba25a2)
+        ;
+
+        
+    
+    
+            circle_marker_66953289376d07cecae8c61974ddbf2b.bindTooltip(
+                `<div>
+                     Qidong (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_ec1f4eb14e24105ab87485bd499d1250 = L.circleMarker(
+                [32.4579729, 119.9181174],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 12, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_d68bdc72c564b2cdfad801e56d7a78e7 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_400f0075d8d278ed03ac2a3aefe8f1ee = $(`<div id="html_400f0075d8d278ed03ac2a3aefe8f1ee" style="width: 100.0%; height: 100.0%;"><b>Taizhou</b><br>Jiangsu<br>6 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_d68bdc72c564b2cdfad801e56d7a78e7.setContent(html_400f0075d8d278ed03ac2a3aefe8f1ee);
+            
+        
+
+        circle_marker_ec1f4eb14e24105ab87485bd499d1250.bindPopup(popup_d68bdc72c564b2cdfad801e56d7a78e7)
+        ;
+
+        
+    
+    
+            circle_marker_ec1f4eb14e24105ab87485bd499d1250.bindTooltip(
+                `<div>
+                     Taizhou (6)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_7b49849611cce40d0a383683e135142d = L.circleMarker(
+                [39.9092478, 116.3398804],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_e9abc6ab810ac89306800b4127c32943 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_1e9d2bfe0c801c8f588399621ce2c676 = $(`<div id="html_1e9d2bfe0c801c8f588399621ce2c676" style="width: 100.0%; height: 100.0%;"><b>Wu Xi Shi,</b><br>Jiangsu<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_e9abc6ab810ac89306800b4127c32943.setContent(html_1e9d2bfe0c801c8f588399621ce2c676);
+            
+        
+
+        circle_marker_7b49849611cce40d0a383683e135142d.bindPopup(popup_e9abc6ab810ac89306800b4127c32943)
+        ;
+
+        
+    
+    
+            circle_marker_7b49849611cce40d0a383683e135142d.bindTooltip(
+                `<div>
+                     Wu Xi Shi, (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_9891a81dca298de49e35607d177ec993 = L.circleMarker(
+                [32.3968554, 119.4077658],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 13, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_22da254c6adceb81055b9abd1f725258 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_d02a5fe20a8bf53202a05ac86cae54b6 = $(`<div id="html_d02a5fe20a8bf53202a05ac86cae54b6" style="width: 100.0%; height: 100.0%;"><b>Yangzhou</b><br>Jiangsu<br>7 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_22da254c6adceb81055b9abd1f725258.setContent(html_d02a5fe20a8bf53202a05ac86cae54b6);
+            
+        
+
+        circle_marker_9891a81dca298de49e35607d177ec993.bindPopup(popup_22da254c6adceb81055b9abd1f725258)
+        ;
+
+        
+    
+    
+            circle_marker_9891a81dca298de49e35607d177ec993.bindTooltip(
+                `<div>
+                     Yangzhou (7)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_7d7c4e4cb91fb31db99e1b8682d2c934 = L.circleMarker(
+                [32.2750989, 119.1790898],
+                {"bubblingMouseEvents": true, "color": "rgb(201,154,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(201,154,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_7286619f370f48aec388169322449449 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_1bbea03b2e26ee79e473bef9c8551353 = $(`<div id="html_1bbea03b2e26ee79e473bef9c8551353" style="width: 100.0%; height: 100.0%;"><b>Yizheng</b><br>Jiangsu<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_7286619f370f48aec388169322449449.setContent(html_1bbea03b2e26ee79e473bef9c8551353);
+            
+        
+
+        circle_marker_7d7c4e4cb91fb31db99e1b8682d2c934.bindPopup(popup_7286619f370f48aec388169322449449)
+        ;
+
+        
+    
+    
+            circle_marker_7d7c4e4cb91fb31db99e1b8682d2c934.bindTooltip(
+                `<div>
+                     Yizheng (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_3cedea2b123f3206ad0f019daabb00bf = L.circleMarker(
+                [28.3803015, 115.0153957],
+                {"bubblingMouseEvents": true, "color": "rgb(152,157,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(152,157,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_383c1409da3670d4127c08501a0a6d2b = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_ca0f1ac690082feabf019c1bd4312f64 = $(`<div id="html_ca0f1ac690082feabf019c1bd4312f64" style="width: 100.0%; height: 100.0%;"><b>Jiangxi</b><br>Jiangxi<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_383c1409da3670d4127c08501a0a6d2b.setContent(html_ca0f1ac690082feabf019c1bd4312f64);
+            
+        
+
+        circle_marker_3cedea2b123f3206ad0f019daabb00bf.bindPopup(popup_383c1409da3670d4127c08501a0a6d2b)
+        ;
+
+        
+    
+    
+            circle_marker_3cedea2b123f3206ad0f019daabb00bf.bindTooltip(
+                `<div>
+                     Jiangxi (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6ae66aa64df3fa6adc27ed7f00f3fd71 = L.circleMarker(
+                [29.388607, 115.3820227],
+                {"bubblingMouseEvents": true, "color": "rgb(152,157,147)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(152,157,147)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_3f32e03118e512c142a33eaa2184e453 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_25da61e380cbadc401887d5d1d8523f1 = $(`<div id="html_25da61e380cbadc401887d5d1d8523f1" style="width: 100.0%; height: 100.0%;"><b>Jiujiang</b><br>Jiangxi<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_3f32e03118e512c142a33eaa2184e453.setContent(html_25da61e380cbadc401887d5d1d8523f1);
+            
+        
+
+        circle_marker_6ae66aa64df3fa6adc27ed7f00f3fd71.bindPopup(popup_3f32e03118e512c142a33eaa2184e453)
+        ;
+
+        
+    
+    
+            circle_marker_6ae66aa64df3fa6adc27ed7f00f3fd71.bindTooltip(
+                `<div>
+                     Jiujiang (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_004f05a3afec6c6bfa428bcc2d95f315 = L.circleMarker(
+                [22.5645135, 120.3538755],
+                {"bubblingMouseEvents": true, "color": "rgb(181,165,144)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(181,165,144)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_923ad82f3046f6c10c7db995f24ca091 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_a1fc29d1581fb359899fdccdd27b0a6f = $(`<div id="html_a1fc29d1581fb359899fdccdd27b0a6f" style="width: 100.0%; height: 100.0%;"><b>Siaogang</b><br>Kaohsiung<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_923ad82f3046f6c10c7db995f24ca091.setContent(html_a1fc29d1581fb359899fdccdd27b0a6f);
+            
+        
+
+        circle_marker_004f05a3afec6c6bfa428bcc2d95f315.bindPopup(popup_923ad82f3046f6c10c7db995f24ca091)
+        ;
+
+        
+    
+    
+            circle_marker_004f05a3afec6c6bfa428bcc2d95f315.bindTooltip(
+                `<div>
+                     Siaogang (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_ed9ff609c56a5fe1785bb0866ff35ea0 = L.circleMarker(
+                [39.740278, 122.255833],
+                {"bubblingMouseEvents": true, "color": "rgb(203,194,163)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(203,194,163)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_3478e8d5eea1abe0eaf4e6dbe1283686 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_483f26e50afc8cd4244613105fc5e375 = $(`<div id="html_483f26e50afc8cd4244613105fc5e375" style="width: 100.0%; height: 100.0%;"><b>Dalian</b><br>Liaoning<br>4 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_3478e8d5eea1abe0eaf4e6dbe1283686.setContent(html_483f26e50afc8cd4244613105fc5e375);
+            
+        
+
+        circle_marker_ed9ff609c56a5fe1785bb0866ff35ea0.bindPopup(popup_3478e8d5eea1abe0eaf4e6dbe1283686)
+        ;
+
+        
+    
+    
+            circle_marker_ed9ff609c56a5fe1785bb0866ff35ea0.bindTooltip(
+                `<div>
+                     Dalian (4)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_d4693f267c457563b026b94e8357865a = L.circleMarker(
+                [41.1796147, 122.0524321],
+                {"bubblingMouseEvents": true, "color": "rgb(203,194,163)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(203,194,163)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_7dbdd2136576260a055d242c4e01deb7 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_e206823788fd8899bbfff98569f8ee54 = $(`<div id="html_e206823788fd8899bbfff98569f8ee54" style="width: 100.0%; height: 100.0%;"><b>Panjin</b><br>Liaoning<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_7dbdd2136576260a055d242c4e01deb7.setContent(html_e206823788fd8899bbfff98569f8ee54);
+            
+        
+
+        circle_marker_d4693f267c457563b026b94e8357865a.bindPopup(popup_7dbdd2136576260a055d242c4e01deb7)
+        ;
+
+        
+    
+    
+            circle_marker_d4693f267c457563b026b94e8357865a.bindTooltip(
+                `<div>
+                     Panjin (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_621e23959f168492b5c554a361215862 = L.circleMarker(
+                [26.762704, 112.0605399],
+                {"bubblingMouseEvents": true, "color": "rgb(200,146,193)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(200,146,193)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_30e19fd2de0d1d07df105da82c0da061 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_f164c000f92f91a292d3c1466a19cd27 = $(`<div id="html_f164c000f92f91a292d3c1466a19cd27" style="width: 100.0%; height: 100.0%;"><b>Qidong</b><br>Qidong<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_30e19fd2de0d1d07df105da82c0da061.setContent(html_f164c000f92f91a292d3c1466a19cd27);
+            
+        
+
+        circle_marker_621e23959f168492b5c554a361215862.bindPopup(popup_30e19fd2de0d1d07df105da82c0da061)
+        ;
+
+        
+    
+    
+            circle_marker_621e23959f168492b5c554a361215862.bindTooltip(
+                `<div>
+                     Qidong (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_d09144a8d1ad44a4521da527d122f37c = L.circleMarker(
+                [34.261004, 108.9423363],
+                {"bubblingMouseEvents": true, "color": "rgb(182,149,170)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(182,149,170)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_b037bdbf2cd3eae1ca527de807366c62 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_b7e0dc76b7a2dceb3dbd25ade041cc6e = $(`<div id="html_b7e0dc76b7a2dceb3dbd25ade041cc6e" style="width: 100.0%; height: 100.0%;"><b>Xi&#x27;an</b><br>Shaanxi<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_b037bdbf2cd3eae1ca527de807366c62.setContent(html_b7e0dc76b7a2dceb3dbd25ade041cc6e);
+            
+        
+
+        circle_marker_d09144a8d1ad44a4521da527d122f37c.bindPopup(popup_b037bdbf2cd3eae1ca527de807366c62)
+        ;
+
+        
+    
+    
+            circle_marker_d09144a8d1ad44a4521da527d122f37c.bindTooltip(
+                `<div>
+                     Xi'an (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_06a2b3df6cac83ec05be81334852529f = L.circleMarker(
+                [37.7949103, 120.824268],
+                {"bubblingMouseEvents": true, "color": "rgb(178,203,154)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(178,203,154)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_f0e444d44c52afec8809e577002ed4b9 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_0a55bc36bcfc66a142b6af5bc62745eb = $(`<div id="html_0a55bc36bcfc66a142b6af5bc62745eb" style="width: 100.0%; height: 100.0%;"><b>Penglai</b><br>Shandong<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_f0e444d44c52afec8809e577002ed4b9.setContent(html_0a55bc36bcfc66a142b6af5bc62745eb);
+            
+        
+
+        circle_marker_06a2b3df6cac83ec05be81334852529f.bindPopup(popup_f0e444d44c52afec8809e577002ed4b9)
+        ;
+
+        
+    
+    
+            circle_marker_06a2b3df6cac83ec05be81334852529f.bindTooltip(
+                `<div>
+                     Penglai (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_cb4315f48d5607d8e8282967e9b45f2c = L.circleMarker(
+                [36.0663249, 120.3777659],
+                {"bubblingMouseEvents": true, "color": "rgb(178,203,154)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(178,203,154)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 9, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_42e547dde5a1c48c4a03aa8c43ee65ad = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_99ed276f9ff95bc6a16adf284df87776 = $(`<div id="html_99ed276f9ff95bc6a16adf284df87776" style="width: 100.0%; height: 100.0%;"><b>Qingdao</b><br>Shandong<br>3 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_42e547dde5a1c48c4a03aa8c43ee65ad.setContent(html_99ed276f9ff95bc6a16adf284df87776);
+            
+        
+
+        circle_marker_cb4315f48d5607d8e8282967e9b45f2c.bindPopup(popup_42e547dde5a1c48c4a03aa8c43ee65ad)
+        ;
+
+        
+    
+    
+            circle_marker_cb4315f48d5607d8e8282967e9b45f2c.bindTooltip(
+                `<div>
+                     Qingdao (3)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_f89e204495bbcb65cc527ed16b6c009d = L.circleMarker(
+                [35.4178833, 119.5213994],
+                {"bubblingMouseEvents": true, "color": "rgb(178,203,154)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(178,203,154)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_8f5eca34835f69cc421a211ac0ffcc86 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_596ce2ee63014fc882b669c64792bde3 = $(`<div id="html_596ce2ee63014fc882b669c64792bde3" style="width: 100.0%; height: 100.0%;"><b>Rizhao</b><br>Shandong<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_8f5eca34835f69cc421a211ac0ffcc86.setContent(html_596ce2ee63014fc882b669c64792bde3);
+            
+        
+
+        circle_marker_f89e204495bbcb65cc527ed16b6c009d.bindPopup(popup_8f5eca34835f69cc421a211ac0ffcc86)
+        ;
+
+        
+    
+    
+            circle_marker_f89e204495bbcb65cc527ed16b6c009d.bindTooltip(
+                `<div>
+                     Rizhao (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_8972f66b621a8f8ccd9b6f3a3ee86026 = L.circleMarker(
+                [37.5120997, 122.1152599],
+                {"bubblingMouseEvents": true, "color": "rgb(178,203,154)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(178,203,154)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 10, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_d8f3ed8e798f0ea1aad366a7c9d0b3e7 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_22ed82cbe5bc325942a38cb41c958303 = $(`<div id="html_22ed82cbe5bc325942a38cb41c958303" style="width: 100.0%; height: 100.0%;"><b>Weihai</b><br>Shandong<br>4 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_d8f3ed8e798f0ea1aad366a7c9d0b3e7.setContent(html_22ed82cbe5bc325942a38cb41c958303);
+            
+        
+
+        circle_marker_8972f66b621a8f8ccd9b6f3a3ee86026.bindPopup(popup_d8f3ed8e798f0ea1aad366a7c9d0b3e7)
+        ;
+
+        
+    
+    
+            circle_marker_8972f66b621a8f8ccd9b6f3a3ee86026.bindTooltip(
+                `<div>
+                     Weihai (4)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_89aa7f96228de09ff1bae0348bdb34a8 = L.circleMarker(
+                [37.461928, 121.4425255],
+                {"bubblingMouseEvents": true, "color": "rgb(178,203,154)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(178,203,154)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_839175c390867272ed346d133c8e91f0 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_964f206d029ba82a91fb452d783dd62f = $(`<div id="html_964f206d029ba82a91fb452d783dd62f" style="width: 100.0%; height: 100.0%;"><b>Yantai</b><br>Shandong<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_839175c390867272ed346d133c8e91f0.setContent(html_964f206d029ba82a91fb452d783dd62f);
+            
+        
+
+        circle_marker_89aa7f96228de09ff1bae0348bdb34a8.bindPopup(popup_839175c390867272ed346d133c8e91f0)
+        ;
+
+        
+    
+    
+            circle_marker_89aa7f96228de09ff1bae0348bdb34a8.bindTooltip(
+                `<div>
+                     Yantai (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_c9c794e548c4b1a7904fb4291a7adb8c = L.circleMarker(
+                [31.2323437, 121.4691024],
+                {"bubblingMouseEvents": true, "color": "rgb(183,144,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(183,144,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 12, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_26cc48f475c1c1404eadcb71f95a5b72 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_da7eb8f775729584a1d5568ed53b2f69 = $(`<div id="html_da7eb8f775729584a1d5568ed53b2f69" style="width: 100.0%; height: 100.0%;"><b>Shanghai</b><br>Shanghai<br>6 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_26cc48f475c1c1404eadcb71f95a5b72.setContent(html_da7eb8f775729584a1d5568ed53b2f69);
+            
+        
+
+        circle_marker_c9c794e548c4b1a7904fb4291a7adb8c.bindPopup(popup_26cc48f475c1c1404eadcb71f95a5b72)
+        ;
+
+        
+    
+    
+            circle_marker_c9c794e548c4b1a7904fb4291a7adb8c.bindTooltip(
+                `<div>
+                     Shanghai (6)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_7624d1d4631bf379e0f6887976c73504 = L.circleMarker(
+                [39.0844897, 117.1956724],
+                {"bubblingMouseEvents": true, "color": "rgb(153,197,184)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(153,197,184)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_f6b11031dc2e0eb3203d349dd52be31f = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_558c3f0fd3e3b7701da97641e06bd91e = $(`<div id="html_558c3f0fd3e3b7701da97641e06bd91e" style="width: 100.0%; height: 100.0%;"><b>Tianjin</b><br>Tianjin<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_f6b11031dc2e0eb3203d349dd52be31f.setContent(html_558c3f0fd3e3b7701da97641e06bd91e);
+            
+        
+
+        circle_marker_7624d1d4631bf379e0f6887976c73504.bindPopup(popup_f6b11031dc2e0eb3203d349dd52be31f)
+        ;
+
+        
+    
+    
+            circle_marker_7624d1d4631bf379e0f6887976c73504.bindTooltip(
+                `<div>
+                     Tianjin (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_f7bd20dc1256611f40311efad9b4721d = L.circleMarker(
+                [39.8960646, 116.657085],
+                {"bubblingMouseEvents": true, "color": "rgb(180,192,203)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(180,192,203)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_c544a2c432b1adf306094501319b210c = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_8f418c8eb629a1069e537e9d7f41cd1c = $(`<div id="html_8f418c8eb629a1069e537e9d7f41cd1c" style="width: 100.0%; height: 100.0%;"><b>Tongzhou</b><br>Tongzhou<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_c544a2c432b1adf306094501319b210c.setContent(html_8f418c8eb629a1069e537e9d7f41cd1c);
+            
+        
+
+        circle_marker_f7bd20dc1256611f40311efad9b4721d.bindPopup(popup_c544a2c432b1adf306094501319b210c)
+        ;
+
+        
+    
+    
+            circle_marker_f7bd20dc1256611f40311efad9b4721d.bindTooltip(
+                `<div>
+                     Tongzhou (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_06da5d7c4ae9f37ca2bf792c20f02199 = L.circleMarker(
+                [30.6421206, 114.3797804],
+                {"bubblingMouseEvents": true, "color": "rgb(163,199,151)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(163,199,151)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_303f3b3e3e1df759ff3ba388c6b4caa3 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_6225efcec330a2995ef0f915cfb91953 = $(`<div id="html_6225efcec330a2995ef0f915cfb91953" style="width: 100.0%; height: 100.0%;"><b>Qingshan</b><br>Wuhan<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_303f3b3e3e1df759ff3ba388c6b4caa3.setContent(html_6225efcec330a2995ef0f915cfb91953);
+            
+        
+
+        circle_marker_06da5d7c4ae9f37ca2bf792c20f02199.bindPopup(popup_303f3b3e3e1df759ff3ba388c6b4caa3)
+        ;
+
+        
+    
+    
+            circle_marker_06da5d7c4ae9f37ca2bf792c20f02199.bindTooltip(
+                `<div>
+                     Qingshan (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_d42bfc20b528ac947f11e35b1f255a9c = L.circleMarker(
+                [30.7092336, 114.4241755],
+                {"bubblingMouseEvents": true, "color": "rgb(163,199,151)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(163,199,151)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_1bd1743b92735b1a9340b6b16c89acf3 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_6b5fffde7e4827e5e6b9bc0161459e8c = $(`<div id="html_6b5fffde7e4827e5e6b9bc0161459e8c" style="width: 100.0%; height: 100.0%;"><b>Wuhu</b><br>Wuhan<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_1bd1743b92735b1a9340b6b16c89acf3.setContent(html_6b5fffde7e4827e5e6b9bc0161459e8c);
+            
+        
+
+        circle_marker_d42bfc20b528ac947f11e35b1f255a9c.bindPopup(popup_1bd1743b92735b1a9340b6b16c89acf3)
+        ;
+
+        
+    
+    
+            circle_marker_d42bfc20b528ac947f11e35b1f255a9c.bindTooltip(
+                `<div>
+                     Wuhu (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_91b5e49d367165a74fc7f720fda66e3e = L.circleMarker(
+                [29.2366578, 118.2251668],
+                {"bubblingMouseEvents": true, "color": "rgb(144,203,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(144,203,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_5c32a491e12575dbd2a5566c935f32aa = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_f9c5c0187ceda979b1c08d53cbdd9963 = $(`<div id="html_f9c5c0187ceda979b1c08d53cbdd9963" style="width: 100.0%; height: 100.0%;"><b>Changhong</b><br>Zhejiang<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_5c32a491e12575dbd2a5566c935f32aa.setContent(html_f9c5c0187ceda979b1c08d53cbdd9963);
+            
+        
+
+        circle_marker_91b5e49d367165a74fc7f720fda66e3e.bindPopup(popup_5c32a491e12575dbd2a5566c935f32aa)
+        ;
+
+        
+    
+    
+            circle_marker_91b5e49d367165a74fc7f720fda66e3e.bindTooltip(
+                `<div>
+                     Changhong (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_962c32c8a8d9c37dd818ab7dcd1e2076 = L.circleMarker(
+                [29.8622194, 121.6203873],
+                {"bubblingMouseEvents": true, "color": "rgb(144,203,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(144,203,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_53f1972fed1b3d3acfd57a7b201942d4 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_ab0b81e6f5de81be6a0092c1d8470003 = $(`<div id="html_ab0b81e6f5de81be6a0092c1d8470003" style="width: 100.0%; height: 100.0%;"><b>Ningbo</b><br>Zhejiang<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_53f1972fed1b3d3acfd57a7b201942d4.setContent(html_ab0b81e6f5de81be6a0092c1d8470003);
+            
+        
+
+        circle_marker_962c32c8a8d9c37dd818ab7dcd1e2076.bindPopup(popup_53f1972fed1b3d3acfd57a7b201942d4)
+        ;
+
+        
+    
+    
+            circle_marker_962c32c8a8d9c37dd818ab7dcd1e2076.bindTooltip(
+                `<div>
+                     Ningbo (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_61d0405c7168531f6cec6c4a86c0acd5 = L.circleMarker(
+                [28.6581723, 121.4163876],
+                {"bubblingMouseEvents": true, "color": "rgb(144,203,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(144,203,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 7, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_c450c9f2995aee3dfede1a06e7aaf3f2 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_c811a58b96c717e0a057b639b8a99940 = $(`<div id="html_c811a58b96c717e0a057b639b8a99940" style="width: 100.0%; height: 100.0%;"><b>Taizhou</b><br>Zhejiang<br>1 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_c450c9f2995aee3dfede1a06e7aaf3f2.setContent(html_c811a58b96c717e0a057b639b8a99940);
+            
+        
+
+        circle_marker_61d0405c7168531f6cec6c4a86c0acd5.bindPopup(popup_c450c9f2995aee3dfede1a06e7aaf3f2)
+        ;
+
+        
+    
+    
+            circle_marker_61d0405c7168531f6cec6c4a86c0acd5.bindTooltip(
+                `<div>
+                     Taizhou (1)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_30d74432b77748389065d09c03d06be4 = L.circleMarker(
+                [28.6581723, 121.4163876],
+                {"bubblingMouseEvents": true, "color": "rgb(144,203,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(144,203,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 9, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_2ea06c8693ba7a6b52228fa971ee3dbb = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_4930c9cc607584add590f5467faf7a3f = $(`<div id="html_4930c9cc607584add590f5467faf7a3f" style="width: 100.0%; height: 100.0%;"><b>Zhejiang</b><br>Zhejiang<br>3 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_2ea06c8693ba7a6b52228fa971ee3dbb.setContent(html_4930c9cc607584add590f5467faf7a3f);
+            
+        
+
+        circle_marker_30d74432b77748389065d09c03d06be4.bindPopup(popup_2ea06c8693ba7a6b52228fa971ee3dbb)
+        ;
+
+        
+    
+    
+            circle_marker_30d74432b77748389065d09c03d06be4.bindTooltip(
+                `<div>
+                     Zhejiang (3)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_5d18a952ec05c8a6e2543604f96f365b = L.circleMarker(
+                [29.9873344, 122.2030363],
+                {"bubblingMouseEvents": true, "color": "rgb(144,203,175)", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "rgb(144,203,175)", "fillOpacity": 0.9, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 8, "stroke": true, "weight": 2}
+            ).addTo(map_d3123ea09609e1987c783e45119fcf9c);
+        
+    
+        var popup_4ae07bfd715d88f9253d4086dd81e509 = L.popup({
+  "maxWidth": 380,
+});
+
+        
+            
+                var html_c1223d37ef37c9f9b043444cb2043275 = $(`<div id="html_c1223d37ef37c9f9b043444cb2043275" style="width: 100.0%; height: 100.0%;"><b>Zhoushan</b><br>Zhejiang<br>2 address(es)<br><i>Use the left panel to view/edit.</i></div>`)[0];
+                popup_4ae07bfd715d88f9253d4086dd81e509.setContent(html_c1223d37ef37c9f9b043444cb2043275);
+            
+        
+
+        circle_marker_5d18a952ec05c8a6e2543604f96f365b.bindPopup(popup_4ae07bfd715d88f9253d4086dd81e509)
+        ;
+
+        
+    
+    
+            circle_marker_5d18a952ec05c8a6e2543604f96f365b.bindTooltip(
+                `<div>
+                     Zhoushan (2)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>
